@@ -1,14 +1,22 @@
-# Start with minimal OpenJDK image
-FROM openjdk:21-jdk-slim
+# -------- Stage 1: Build JAR with Gradle --------
+FROM gradle:8.5-jdk21 AS build
 
-# Set work directory in container
 WORKDIR /app
 
-# Copy jar file into container
-COPY build/libs/demofile-0.0.1-SNAPSHOT.jar app.jar
+# Copy source code
+COPY . .
 
-# Expose port the app uses
+# Build the project
+RUN gradle build --no-daemon
+
+# -------- Stage 2: Run the JAR with OpenJDK --------
+FROM openjdk:21-jdk-slim
+
+WORKDIR /app
+
+# Copy JAR from previous stage
+COPY --from=build /app/build/libs/*.jar app.jar
+
 EXPOSE 8080
 
-# Run the app
 ENTRYPOINT ["java", "-jar", "app.jar"]
